@@ -252,3 +252,55 @@ describe("capture", () => {
     });
   });
 });
+
+describe("Source URL matching", () => {
+  it("treats URLs differing only by fragment or trailing slash as the same Source", () => {
+    const { core } = setup();
+    const task = core.addTask({
+      title: "Original",
+      lane: "review",
+      sources: [{ url: "https://github.com/acme/web/pull/7/", summary: "PR" }],
+    });
+    expectTodoError(
+      () =>
+        core.addTask({
+          title: "Again",
+          lane: "review",
+          sources: [{ url: "https://github.com/acme/web/pull/7#issuecomment-123", summary: "PR" }],
+        }),
+      "DUPLICATE_SOURCE",
+    );
+    expect(core.findBySourceUrl("https://github.com/acme/web/pull/7")).toEqual([
+      expect.objectContaining({ id: task.id, sourceIds: [task.sources[0].id] }),
+    ]);
+  });
+});
+
+describe("capture results and Person lookup", () => {
+  it("returns summaries of the created Tasks in input order", () => {
+    const { core } = setup();
+    const result = core.capture({
+      tasks: [
+        { title: "first", lane: "write" },
+        { title: "second", lane: "quick", priority: "high" },
+      ],
+    });
+    expect(result.tasks.map((t) => [t.id, t.title, t.lane, t.priority])).toEqual([
+      [result.taskIds[0], "first", "write", "normal"],
+      [result.taskIds[1], "second", "quick", "high"],
+    ]);
+  });
+
+  it("finds a Person by id, handle or name without creating one", () => {
+    const { core } = setup();
+    core.addTask({ title: "x", lane: "align", people: [{ name: "Priya Shah", handles: ["@priya"] }] });
+    const priya = core.people()[0];
+    expect(core.findPerson(priya.id)).toMatchObject({ id: priya.id, activeTaskCount: 1 });
+    expect(core.findPerson(String(priya.id))?.id).toBe(priya.id);
+    expect(core.findPerson("@Priya")?.id).toBe(priya.id);
+    expect(core.findPerson("priya shah")?.id).toBe(priya.id);
+    expect(core.findPerson("@nobody")).toBeNull();
+    expect(core.findPerson("Nobody")).toBeNull();
+    expect(core.people()).toHaveLength(1);
+  });
+});

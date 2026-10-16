@@ -214,3 +214,58 @@ describe("changing Lane", () => {
     expectTodoError(() => core.changeLane(task.id, { lane: "quick", reason: "r" }), "INVALID_TRANSITION");
   });
 });
+
+describe("steering claims", () => {
+  it("skips excluded Tasks", () => {
+    const { core } = setup();
+    const first = core.addTask({ title: "nothing to prep", lane: "quick", priority: "high" });
+    const second = core.addTask({ title: "needs a reply draft", lane: "quick" });
+    expect(core.claim("quick", "w", { exclude: [first.id] })!.id).toBe(second.id);
+    expect(core.claim("quick", "w", { exclude: [first.id] })).toBeNull();
+  });
+
+  it("claims one specific open Task", () => {
+    const { core } = setup();
+    core.addTask({ title: "top", lane: "review", priority: "high" });
+    const target = core.addTask({ title: "this one", lane: "review" });
+    expect(core.claimTask(target.id, "w")).toMatchObject({ id: target.id, status: "claimed", claimedBy: "w" });
+  });
+
+  it("refuses to claim a specific Task that is not open", () => {
+    const { core } = setup();
+    const task = core.addTask({ title: "x", lane: "review" });
+    core.claimTask(task.id, "a");
+    const err = expectTodoError(() => core.claimTask(task.id, "b"), "CLAIM_CONFLICT");
+    expect(err.details).toMatchObject({ status: "claimed", claimedBy: "a" });
+  });
+});
+
+describe("Worker context", () => {
+  it("includes the Initiative's description and Sources with a claimed Task", () => {
+    const { core } = setup();
+    const { initiativeId } = core.capture({
+      initiative: {
+        title: "Billing v2",
+        description: "Move every invoice path to the v2 ledger by Q1",
+        sources: [{ url: "https://docs/billing-v2", summary: "The v2 design doc" }],
+      },
+      tasks: [{ title: "Write cutover runbook", lane: "write" }],
+    });
+    expect(core.claim("write")!.parentContext).toEqual({
+      id: initiativeId,
+      title: "Billing v2",
+      description: "Move every invoice path to the v2 ledger by Q1",
+      sources: [expect.objectContaining({ url: "https://docs/billing-v2", summary: "The v2 design doc" })],
+    });
+  });
+
+  it("keeps the waiting note as a note when a Task leaves Waiting", () => {
+    const { core, clock } = setup("2026-10-14T09:00:00Z");
+    const task = core.addTask({ title: "Schema sign-off", lane: "align" });
+    core.setWaiting(task.id, { note: "Waiting on Priya's review" });
+    clock.advanceDays(4);
+    const ready = core.attachPrep(task.id, { kind: "follow-up", body: "Hi Priya…", ready: true });
+    expect(ready.waitingNote).toBeNull();
+    expect(ready.notes.map((n) => n.body)).toEqual(["Was waiting since 2026-10-14: Waiting on Priya's review"]);
+  });
+});

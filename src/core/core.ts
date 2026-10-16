@@ -128,6 +128,8 @@ export interface NoteView {
 
 export interface TaskDetail extends TaskSummary {
   description: string;
+  /** The Initiative this Task belongs to, with the context a Worker needs. */
+  parentContext: { id: number; title: string; description: string; sources: SourceView[] } | null;
   repoDetail: { name: string; path: string; remote: string | null } | null;
   sources: SourceView[];
   preps: PrepView[];
@@ -194,6 +196,11 @@ export function localDate(d: Date): string {
 
 const isActive = (s: Status) => ACTIVE_STATUSES.includes(s);
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Fragments (e.g. GitHub `#issuecomment-…`) and trailing slashes don't make a different Source. */
+export function normalizeUrl(url: string): string {
+  return url.trim().replace(/#.*$/, "").replace(/\/+$/, "");
+}
 
 function normalizeHandle(h: string): string {
   return h.trim().replace(/^@/, "").toLowerCase();
@@ -268,6 +275,9 @@ export function createCore(options: CoreOptions = {}) {
   function setStatus(row: TaskRow, to: Status, extra: Partial<TaskRow> = {}) {
     assertTransition(row, to);
     const now = nowIso();
+    if (row.status === "waiting" && to !== "waiting" && row.waitingNote) {
+      addNote(row.id, `Was waiting since ${row.waitingSince?.slice(0, 10)}: ${row.waitingNote}`, "system");
+    }
     const patch: Partial<TaskRow> = {
       status: to,
       updatedAt: now,
@@ -289,6 +299,14 @@ export function createCore(options: CoreOptions = {}) {
     return db.select().from(people).all();
   }
 
+  /** A handle ("@priya") matches handles only; a plain string matches a handle, then an exact name. */
+  function matchPerson(everyone: PersonRow[], value: string): PersonRow | undefined {
+    const key = normalizeHandle(value);
+    const byHandle = everyone.find((p) => p.handles.some((h) => normalizeHandle(h) === key));
+    if (byHandle || value.trim().startsWith("@")) return byHandle;
+    return everyone.find((p) => p.name.toLowerCase() === value.trim().toLowerCase());
+  }
+
   /** Matches by handle first, then exact (case-insensitive) name; creates the Person if unknown. */
   function resolvePerson(ref: PersonRef): { person: PersonRow; role: string | null } {
     const now = nowIso();
@@ -296,13 +314,8 @@ export function createCore(options: CoreOptions = {}) {
     if (typeof ref === "string") {
       const value = ref.trim();
       const isHandle = value.startsWith("@");
-      const key = normalizeHandle(value);
-      const byHandle = everyone.find((p) => p.handles.some((h) => normalizeHandle(h) === key));
-      if (byHandle) return { person: byHandle, role: null };
-      if (!isHandle) {
-        const byName = everyone.find((p) => p.name.toLowerCase() === value.toLowerCase());
-        if (byName) return { person: byName, role: null };
-      }
+      const existing = matchPerson(everyone, value);
+      if (existing) return { person: existing, role: null };
       const created = db
         .insert(people)
         .values({ name: isHandle ? value.slice(1) : value, handles: isHandle ? [value] : [], createdAt: now })
@@ -348,13 +361,13 @@ export function createCore(options: CoreOptions = {}) {
     const now = nowIso();
     for (const s of list) {
       db.insert(sources)
-        .values({ taskId, url: s.url ?? null, summary: s.summary, createdAt: now, updatedAt: now })
+        .values({ taskId, url: s.url ? normalizeUrl(s.url) : null, summary: s.summary, createdAt: now, updatedAt: now })
         .run();
     }
   }
 
   function duplicateMatches(urls: string[]): DuplicateMatch[] {
-    const unique = [...new Set(urls)];
+    const unique = [...new Set(urls.map(normalizeUrl))];
     if (!unique.length) return [];
     const rows = db
       .select({ url: sources.url, task: tasks })
@@ -371,6 +384,22 @@ export function createCore(options: CoreOptions = {}) {
       byUrl.set(r.url!, m);
     }
     return [...byUrl.values()];
+  }
+
+  function sourcesOf(taskId: number): SourceView[] {
+    return db
+      .select()
+      .from(sources)
+      .where(eq(sources.taskId, taskId))
+      .orderBy(asc(sources.id))
+      .all()
+      .map(({ taskId: _taskId, ...s }) => s);
+  }
+
+  function parentContext(parentId: number): TaskDetail["parentContext"] {
+    const parent = db.select().from(tasks).where(eq(tasks.id, parentId)).get();
+    if (!parent) return null;
+    return { id: parent.id, title: parent.title, description: parent.description, sources: sourcesOf(parent.id) };
   }
 
   // ----- Initiative status (derived) -----
@@ -478,13 +507,7 @@ export function createCore(options: CoreOptions = {}) {
       ...summary,
       description: row.description,
       repoDetail: repo ? { name: repo.name, path: repo.path, remote: repo.remote } : null,
-      sources: db
-        .select()
-        .from(sources)
-        .where(eq(sources.taskId, id))
-        .orderBy(asc(sources.id))
-        .all()
-        .map(({ taskId: _taskId, ...s }) => s),
+      sources: sourcesOf(id),
       preps: db
         .select()
         .from(preps)
@@ -506,6 +529,7 @@ export function createCore(options: CoreOptions = {}) {
         .orderBy(asc(notes.id))
         .all()
         .map(({ taskId: _taskId, ...n }) => n),
+      parentContext: row.parentId ? parentContext(row.parentId) : null,
       children: row.kind === "initiative" ? sortTasks(summarize(childrenRows(id))) : [],
       followUpDays: row.followUpDays ?? DEFAULT_FOLLOW_UP_DAYS,
       followUpDue: followUpDue(row),
@@ -620,15 +644,45 @@ export function createCore(options: CoreOptions = {}) {
     return sortTasks(summarize(rows).filter((t) => wanted.includes(t.status)));
   }
 
+  function listPeople(): PersonSummary[] {
+    const everyone = db.select().from(people).orderBy(asc(people.name)).all();
+    const links = db
+      .select({ personId: taskPeople.personId, task: tasks })
+      .from(taskPeople)
+      .innerJoin(tasks, eq(taskPeople.taskId, tasks.id))
+      .all();
+    return everyone.map((p) => ({
+      id: p.id,
+      name: p.name,
+      handles: p.handles,
+      activeTaskCount: links.filter((l) => l.personId === p.id && isActive(statusOf(l.task))).length,
+    }));
+  }
+
   const transaction = <T>(fn: () => T): T => db.$client.transaction(fn)();
+
+  function takeClaim(row: TaskRow, worker: string) {
+    const now = nowIso();
+    if (row.status === "claimed") addNote(row.id, `Claim by ${row.claimedBy} lapsed`, "system");
+    db.update(tasks)
+      .set({
+        status: "claimed",
+        claimedBy: worker,
+        claimedAt: now,
+        claimExpiresAt: new Date(clock.now().getTime() + CLAIM_DURATION_MS).toISOString(),
+        updatedAt: now,
+      })
+      .where(eq(tasks.id, row.id))
+      .run();
+  }
 
   return {
     db,
 
     // ----- Capture -----
 
-    /** Writes an optional Initiative plus Tasks atomically. Returns the created ids. */
-    capture(raw: CaptureInput | unknown): { initiativeId: number | null; taskIds: number[] } {
+    /** Writes an optional Initiative plus Tasks atomically. Returns the created ids and Task summaries. */
+    capture(raw: CaptureInput | unknown): { initiativeId: number | null; taskIds: number[]; tasks: TaskSummary[] } {
       if (raw && typeof raw === "object" && "initiative" in raw)
         rejectLaneOnInitiative((raw as { initiative?: unknown }).initiative);
       const input = parse(captureInput, raw);
@@ -638,7 +692,7 @@ export function createCore(options: CoreOptions = {}) {
       ]
         .map((s) => s.url)
         .filter((u): u is string => !!u);
-      return transaction(() => {
+      const created = transaction(() => {
         checkDuplicates(urls, input.force);
         let initiativeId: number | null = null;
         if (input.initiative) {
@@ -648,6 +702,9 @@ export function createCore(options: CoreOptions = {}) {
         const taskIds = input.tasks.map((t) => insertTask(t, initiativeId));
         return { initiativeId, taskIds };
       });
+      const rows = db.select().from(tasks).where(inArray(tasks.id, created.taskIds)).all();
+      const summaries = summarize(rows);
+      return { ...created, tasks: created.taskIds.map((id) => summaries.find((t) => t.id === id)!) };
     },
 
     addTask(raw: TaskInput & { force?: boolean }): TaskDetail {
@@ -677,21 +734,23 @@ export function createCore(options: CoreOptions = {}) {
       return detail(id);
     },
 
-    findBySourceUrl(url: string): TaskSummary[] {
-      const ids = db
-        .select({ id: sources.taskId })
+    /** Tasks with a Source at this URL, with the matching Source ids so summaries can be refreshed. */
+    findBySourceUrl(url: string): (TaskSummary & { sourceIds: number[] })[] {
+      const matches = db
+        .select({ id: sources.id, taskId: sources.taskId })
         .from(sources)
-        .where(eq(sources.url, url.trim()))
-        .all()
-        .map((r) => r.id);
-      if (!ids.length) return [];
-      return summarize(
-        db
-          .select()
-          .from(tasks)
-          .where(inArray(tasks.id, [...new Set(ids)]))
-          .all(),
-      );
+        .where(eq(sources.url, normalizeUrl(url)))
+        .all();
+      if (!matches.length) return [];
+      const rows = db
+        .select()
+        .from(tasks)
+        .where(inArray(tasks.id, [...new Set(matches.map((m) => m.taskId))]))
+        .all();
+      return sortTasks(summarize(rows)).map((t) => ({
+        ...t,
+        sourceIds: matches.filter((m) => m.taskId === t.id).map((m) => m.id),
+      }));
     },
 
     addSource(taskId: number, raw: SourceInput): TaskDetail {
@@ -803,18 +862,21 @@ export function createCore(options: CoreOptions = {}) {
 
     // ----- Work -----
 
-    /** Atomically takes the best open Task in a Lane, or returns null when none is eligible. */
-    claim(lane: Lane, worker = "worker"): TaskDetail | null {
+    /**
+     * Atomically takes the best open Task in a Lane, or returns null when none is eligible.
+     * `exclude` lets a Worker skip Tasks it has already decided not to work this run.
+     */
+    claim(lane: Lane, worker = "worker", options: { exclude?: number[] } = {}): TaskDetail | null {
       const l = parse(z.enum(LANES), lane);
       const who = parse(z.string().trim().min(1), worker);
+      const exclude = new Set(options.exclude ?? []);
       const id = transaction(() => {
-        const now = nowIso();
         const candidates = db
           .select()
           .from(tasks)
           .where(and(eq(tasks.kind, "task"), eq(tasks.lane, l), inArray(tasks.status, ["open", "claimed"])))
           .all()
-          .filter((r) => effectiveStatus(r) === "open")
+          .filter((r) => effectiveStatus(r) === "open" && !exclude.has(r.id))
           .sort(
             (a, b) =>
               PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
@@ -824,20 +886,28 @@ export function createCore(options: CoreOptions = {}) {
           );
         const pick = candidates[0];
         if (!pick) return null;
-        if (pick.status === "claimed") addNote(pick.id, `Claim by ${pick.claimedBy} lapsed`, "system");
-        db.update(tasks)
-          .set({
-            status: "claimed",
-            claimedBy: who,
-            claimedAt: now,
-            claimExpiresAt: new Date(clock.now().getTime() + CLAIM_DURATION_MS).toISOString(),
-            updatedAt: now,
-          })
-          .where(eq(tasks.id, pick.id))
-          .run();
+        takeClaim(pick, who);
         return pick.id;
       });
       return id == null ? null : detail(id);
+    },
+
+    /** Atomically claims one specific open Task. */
+    claimTask(id: number, worker = "worker"): TaskDetail {
+      const who = parse(z.string().trim().min(1), worker);
+      transaction(() => {
+        const row = getTaskRow(id);
+        const status = effectiveStatus(row);
+        if (status !== "open") {
+          throw new TodoError("CLAIM_CONFLICT", `Task ${id} is ${status}, not open`, {
+            id,
+            status,
+            claimedBy: status === "claimed" ? row.claimedBy : undefined,
+          });
+        }
+        takeClaim(row, who);
+      });
+      return detail(id);
     },
 
     renewClaim(id: number, worker = "worker"): TaskDetail {
@@ -1063,18 +1133,15 @@ export function createCore(options: CoreOptions = {}) {
     },
 
     people(): PersonSummary[] {
-      const everyone = db.select().from(people).orderBy(asc(people.name)).all();
-      const links = db
-        .select({ personId: taskPeople.personId, task: tasks })
-        .from(taskPeople)
-        .innerJoin(tasks, eq(taskPeople.taskId, tasks.id))
-        .all();
-      return everyone.map((p) => ({
-        id: p.id,
-        name: p.name,
-        handles: p.handles,
-        activeTaskCount: links.filter((l) => l.personId === p.id && isActive(statusOf(l.task))).length,
-      }));
+      return listPeople();
+    },
+
+    /** Looks up a Person by id, handle ("@priya") or exact name without creating one. */
+    findPerson(ref: string | number): PersonSummary | null {
+      const everyone = db.select().from(people).all();
+      const value = String(ref).trim();
+      const found = /^\d+$/.test(value) ? everyone.find((p) => p.id === Number(value)) : matchPerson(everyone, value);
+      return found ? (listPeople().find((p) => p.id === found.id) ?? null) : null;
     },
 
     person(id: number): PersonSummary & { tasks: TaskSummary[] } {

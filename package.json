@@ -47,5 +47,8 @@
   "description": "A personal, local task list for a staff engineer, written to and worked on by coding agents.",
   "bin": {
     "todo": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }
