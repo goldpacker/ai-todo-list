@@ -1,4 +1,4 @@
-// Small, server-safe display pieces for Tasks: Lane dot, status icon, priority marker, due label, people.
+// Small, server-safe display pieces for Tasks: Lane pill, status icon, priority and due pills, people.
 import clsx from "clsx";
 import {
   Circle,
@@ -11,29 +11,35 @@ import {
 } from "lucide-react";
 import { LANE_INFO, type Lane, type Priority, type Status } from "@/core/domain";
 import { dueLabel, initials } from "@/lib/format";
-import { LANE_COLOR, STATUS_LABEL } from "@/lib/ui-meta";
-import { Dot } from "./ui/badge";
+import { LANE_COLOR, STATUS_LABEL, personColor } from "@/lib/ui-meta";
+import { Pill } from "./ui/badge";
 
-export function LaneDot({ lane, className, labelled }: { lane: Lane; className?: string; labelled?: boolean }) {
-  return <Dot color={LANE_COLOR[lane]} className={className} label={labelled ? LANE_INFO[lane].name : undefined} />;
+/** Lane identity: a solid pastel pill with dark text. */
+export function LanePill({ lane, className }: { lane: Lane; className?: string }) {
+  return (
+    <Pill tone="none" className={clsx("text-on", className)} style={{ backgroundColor: LANE_COLOR[lane] }}>
+      {LANE_INFO[lane].name}
+    </Pill>
+  );
 }
 
-export function LaneTag({ lane }: { lane: Lane }) {
+export function LaneDot({ lane, className }: { lane: Lane; className?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-ui text-muted">
-      <LaneDot lane={lane} />
-      {LANE_INFO[lane].name}
-    </span>
+    <span
+      aria-hidden
+      className={clsx("inline-block size-2.5 shrink-0 rounded-full", className)}
+      style={{ backgroundColor: LANE_COLOR[lane] }}
+    />
   );
 }
 
 const STATUS_ICON: Record<Status, { icon: LucideIcon; className: string }> = {
-  open: { icon: Circle, className: "text-subtle" },
-  claimed: { icon: CircleDotDashed, className: "text-accent" },
-  ready: { icon: CircleArrowRight, className: "text-accent" },
-  waiting: { icon: CirclePause, className: "text-warn" },
-  done: { icon: CircleCheck, className: "text-success" },
-  dropped: { icon: CircleX, className: "text-subtle" },
+  open: { icon: Circle, className: "text-overlay1" },
+  claimed: { icon: CircleDotDashed, className: "text-green" },
+  ready: { icon: CircleArrowRight, className: "text-mauve" },
+  waiting: { icon: CirclePause, className: "text-peach" },
+  done: { icon: CircleCheck, className: "text-green" },
+  dropped: { icon: CircleX, className: "text-overlay1" },
 };
 
 export function StatusIcon({ status, className }: { status: Status; className?: string }) {
@@ -42,41 +48,29 @@ export function StatusIcon({ status, className }: { status: Status; className?: 
     <Icon
       role="img"
       aria-label={STATUS_LABEL[status]}
-      strokeWidth={2}
-      className={clsx("size-3.5 shrink-0", tone, className)}
+      strokeWidth={2.25}
+      className={clsx("size-4 shrink-0", tone, className)}
     />
   );
 }
 
 export function StatusTag({ status }: { status: Status }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-ui text-fg">
+    <span className="inline-flex items-center gap-1.5 text-sm text-text">
       <StatusIcon status={status} />
       {STATUS_LABEL[status]}
     </span>
   );
 }
 
-/** Only high priority gets a mark; normal and low stay quiet. */
-export function PriorityMark({ priority }: { priority: Priority }) {
+/** Only high priority gets a pill; normal and low stay quiet. */
+export function PriorityPill({ priority }: { priority: Priority }) {
   if (priority !== "high") return null;
-  return (
-    <span
-      title="High priority"
-      className="inline-flex shrink-0 items-center text-danger"
-      aria-label="High priority"
-      role="img"
-    >
-      <svg viewBox="0 0 12 12" className="size-3" aria-hidden>
-        <rect x="1.5" y="6" width="2" height="4.5" rx="0.6" fill="currentColor" />
-        <rect x="5" y="3.75" width="2" height="6.75" rx="0.6" fill="currentColor" />
-        <rect x="8.5" y="1.5" width="2" height="9" rx="0.6" fill="currentColor" />
-      </svg>
-    </span>
-  );
+  return <Pill tone="redText">high</Pill>;
 }
 
-export function DueLabel({
+/** Overdue is a red pill, due today yellow text; later dates are plain muted pills. */
+export function DuePill({
   dueDate,
   today,
   active = true,
@@ -85,33 +79,29 @@ export function DueLabel({
   today: string;
   active?: boolean;
 }) {
-  if (!dueDate) return null;
+  if (!dueDate || !active) return null;
   const { text, tone } = dueLabel(dueDate, today);
-  return (
-    <span
-      title={`Due ${dueDate}`}
-      className={clsx(
-        "shrink-0 text-xs whitespace-nowrap tabular-nums",
-        !active
-          ? "text-subtle"
-          : tone === "overdue"
-            ? "font-medium text-danger"
-            : tone === "today"
-              ? "font-medium text-warn"
-              : "text-muted",
-      )}
-    >
-      {active ? text : `Due ${dueDate}`}
-    </span>
-  );
+  const label = text.charAt(0).toLowerCase() + text.slice(1);
+  if (tone === "overdue") return <Pill tone="red">{label}</Pill>;
+  if (tone === "today") return <Pill tone="yellowText">{label}</Pill>;
+  return <Pill>{label}</Pill>;
 }
 
-export function Avatar({ name, className }: { name: string; className?: string }) {
+export function Avatar({
+  name,
+  colorKey,
+  className,
+}: {
+  name: string;
+  colorKey?: string | number;
+  className?: string;
+}) {
   return (
     <span
       title={name}
+      style={{ backgroundColor: personColor(colorKey ?? name) }}
       className={clsx(
-        "inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-avatar ring-2 ring-bg text-[9px] font-semibold tracking-wide text-muted",
+        "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tracking-wide text-on",
         className,
       )}
     >
@@ -127,9 +117,9 @@ export function PeopleStack({ people, max = 3 }: { people: { id: number; name: s
   return (
     <span className="flex shrink-0 items-center -space-x-1.5" aria-label={people.map((p) => p.name).join(", ")}>
       {shown.map((p) => (
-        <Avatar key={p.id} name={p.name} />
+        <Avatar key={p.id} name={p.name} colorKey={p.id} className="ring-2 ring-surface0" />
       ))}
-      {extra > 0 && <span className="pl-2.5 text-2xs text-subtle">+{extra}</span>}
+      {extra > 0 && <span className="pl-2.5 text-2xs font-semibold text-subtext0">+{extra}</span>}
     </span>
   );
 }
@@ -143,9 +133,9 @@ export function ProgressBar({ resolved, total, className }: { resolved: number; 
       aria-valuemax={total}
       aria-valuenow={resolved}
       aria-label={`${resolved} of ${total} resolved`}
-      className={clsx("h-1 overflow-hidden rounded-full bg-active", className)}
+      className={clsx("h-2 overflow-hidden rounded-full bg-surface0", className)}
     >
-      <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+      <div className="h-full rounded-full bg-mauve transition-[width]" style={{ width: `${pct}%` }} />
     </div>
   );
 }

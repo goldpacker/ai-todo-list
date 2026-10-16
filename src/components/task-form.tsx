@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useId, useState } from "react";
 import clsx from "clsx";
 import { TriangleAlert } from "lucide-react";
-import { LANES, LANE_INFO, PRIORITIES, type Lane } from "@/core/domain";
+import { LANE_INFO, PRIORITIES, type Lane } from "@/core/domain";
 import { addTaskAction, createInitiativeAction } from "@/app/actions";
 import { LANE_COLOR, STATUS_LABEL } from "@/lib/ui-meta";
 import { Button } from "./ui/button";
+import { LanePicker } from "./lane-picker";
 import { Field, Input, Select, Textarea, describedBy } from "./ui/field";
 import { FormError, SubmitButton, useServerForm } from "./ui/form";
 
@@ -60,7 +61,7 @@ export function TaskForm({
 
   return (
     <form onSubmit={form.onSubmit} className="flex flex-col gap-4" noValidate={false}>
-      <div role="radiogroup" aria-label="What to add" className="inline-flex w-fit rounded-md border border-line p-0.5">
+      <div role="radiogroup" aria-label="What to add" className="inline-flex w-fit gap-1 rounded-full bg-mantle p-1">
         {(["task", "initiative"] as const).map((k) => (
           <button
             key={k}
@@ -72,8 +73,8 @@ export function TaskForm({
               form.reset();
             }}
             className={clsx(
-              "h-6 rounded-[5px] px-2.5 text-xs font-medium transition-colors",
-              kind === k ? "bg-active text-fg" : "text-muted hover:text-fg",
+              "h-8 rounded-full px-4 text-ui font-semibold transition-colors",
+              kind === k ? "bg-surface0 text-text" : "text-subtext0 hover:text-text",
             )}
           >
             {k === "task" ? "Task" : "Initiative"}
@@ -96,23 +97,23 @@ export function TaskForm({
 
       {kind === "task" && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            id={id("lane")}
-            label="Lane"
-            error={err.lane}
-            hint={lane ? LANE_INFO[lane].description : "Who acts next, and how."}
-          >
-            <Select {...ctl("lane", true)} required value={lane} onChange={(e) => setLane(e.target.value as Lane | "")}>
-              <option value="" disabled>
-                Choose a Lane…
-              </option>
-              {LANES.map((l) => (
-                <option key={l} value={l}>
-                  {LANE_INFO[l].name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div className="sm:col-span-2">
+            <LanePicker
+              legend="Lane"
+              name="lane"
+              value={lane}
+              onChange={setLane}
+              required
+              invalid={!!err.lane}
+              describedBy={`${id("lane")}-hint`}
+            />
+            <p
+              id={`${id("lane")}-hint`}
+              className={clsx("mt-1.5 text-xs", err.lane ? "font-medium text-red" : "text-subtext0")}
+            >
+              {err.lane ?? (lane ? LANE_INFO[lane].description : "Who acts next, and how. Pick one.")}
+            </p>
+          </div>
           <Field id={id("repo")} label="Repo" optional={lane !== "delegate"} error={err.repo} hint={repoHint}>
             <Select {...ctl("repo", repoHint)} required={lane === "delegate"} defaultValue="">
               <option value="">{lane === "delegate" ? "Choose a Repo…" : "None"}</option>
@@ -155,9 +156,9 @@ export function TaskForm({
         <Input {...ctl("people", true)} autoComplete="off" placeholder="Priya Shah, @marcus" />
       </Field>
 
-      <fieldset className="flex flex-col gap-3 rounded-md border border-line p-3">
-        <legend className="px-1 text-xs font-medium text-muted">
-          Source <span className="font-normal text-subtle">· optional</span>
+      <fieldset className="flex flex-col gap-3 rounded-2xl bg-mantle/60 p-4 pt-2">
+        <legend className="px-1 text-ui font-semibold text-subtext1">
+          Source <span className="font-normal text-overlay1">· optional</span>
         </legend>
         <Field id={id("sourceUrl")} label="Link" error={err.sourceUrl}>
           <Input {...ctl("sourceUrl")} type="url" inputMode="url" placeholder="https://…" />
@@ -186,9 +187,9 @@ export function TaskForm({
       )}
 
       {state.duplicates && state.duplicates.length > 0 && (
-        <div role="alert" className="rounded-md border border-line bg-bg-subtle p-3 text-ui">
-          <p className="flex items-center gap-1.5 font-medium text-fg">
-            <TriangleAlert aria-hidden className="size-3.5 text-warn" />
+        <div role="alert" className="rounded-2xl border-2 border-peach/60 bg-peach/10 p-4 text-ui">
+          <p className="flex items-center gap-1.5 font-semibold text-peach">
+            <TriangleAlert aria-hidden className="size-4" />
             This Source is already on file
           </p>
           <ul className="mt-2 flex flex-col gap-1">
@@ -198,15 +199,19 @@ export function TaskForm({
                   {t.lane && (
                     <span className="size-2 rounded-full" style={{ backgroundColor: LANE_COLOR[t.lane] }} aria-hidden />
                   )}
-                  <Link href={`/tasks/${t.id}`} className="truncate text-accent hover:underline" onClick={onCancel}>
+                  <Link
+                    href={`/tasks/${t.id}`}
+                    className="truncate font-semibold text-mauve hover:underline"
+                    onClick={onCancel}
+                  >
                     {t.title}
                   </Link>
-                  <span className="text-xs text-subtle">{STATUS_LABEL[t.status]}</span>
+                  <span className="text-xs text-subtext0">{STATUS_LABEL[t.status]}</span>
                 </li>
               )),
             )}
           </ul>
-          <p className="mt-2 text-xs text-muted">Update the existing Task instead, or add this one anyway.</p>
+          <p className="mt-2 text-xs text-subtext0">Update the existing Task instead, or add this one anyway.</p>
         </div>
       )}
 

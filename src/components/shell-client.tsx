@@ -12,9 +12,9 @@ function isTyping(target: EventTarget | null) {
   return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
-const GO_TO: Record<string, string> = { t: "/", i: "/initiatives", p: "/people" };
+const GO_TO: Record<string, string> = { t: "/", l: "/lanes", i: "/initiatives", p: "/people" };
 
-/** Light keyboard layer: `n`/`c` new Task, `g t` Today, `g i` Initiatives, `g p` People. */
+/** Light keyboard layer: `n`/`c` new Task, `g t` Today, `g l` Lanes, `g i` Initiatives, `g p` People. */
 export function KeyboardShortcuts() {
   const router = useRouter();
   useEffect(() => {

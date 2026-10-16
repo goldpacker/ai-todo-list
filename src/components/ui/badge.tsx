@@ -1,28 +1,36 @@
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-export type BadgeTone = "neutral" | "accent" | "danger" | "warn";
+export type PillTone = "none" | "neutral" | "accent" | "red" | "redText" | "yellowText" | "peach" | "green";
 
-const tones: Record<BadgeTone, string> = {
-  neutral: "border-line text-muted",
-  accent: "border-transparent bg-accent-soft text-accent",
-  danger: "border-transparent bg-danger-soft text-danger",
-  warn: "border-line text-warn",
+const tones: Record<PillTone, string> = {
+  none: "",
+  neutral: "bg-surface1 text-subtext1",
+  accent: "bg-mauve text-on",
+  red: "bg-red text-on",
+  redText: "bg-mantle text-red ring-1 ring-surface1",
+  yellowText: "bg-surface1 text-yellow",
+  peach: "bg-peach text-on",
+  green: "bg-green text-on",
 };
 
-export function Badge({
+/** Small rounded pill: lanes, reasons, counts. */
+export function Pill({
   tone = "neutral",
   className,
+  style,
   children,
 }: {
-  tone?: BadgeTone;
+  tone?: PillTone;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
 }) {
   return (
     <span
+      style={style}
       className={clsx(
-        "inline-flex h-5 shrink-0 items-center gap-1 rounded-full border px-1.5 text-2xs font-medium whitespace-nowrap",
+        "inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2.5 text-2xs font-bold whitespace-nowrap",
         tones[tone],
         className,
       )}
@@ -32,21 +40,9 @@ export function Badge({
   );
 }
 
-export function Dot({ color, className, label }: { color: string; className?: string; label?: string }) {
-  return (
-    <span
-      role={label ? "img" : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-      className={clsx("inline-block size-2 shrink-0 rounded-full", className)}
-      style={{ backgroundColor: color }}
-    />
-  );
-}
-
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded border border-line-strong px-1 font-sans text-2xs font-medium text-subtle">
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-surface1 px-1.5 font-mono text-2xs font-medium text-subtext1">
       {children}
     </kbd>
   );

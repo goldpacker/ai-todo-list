@@ -43,7 +43,7 @@ export function Dialog({
     <dialog
       ref={ref}
       className="ui-dialog"
-      style={wide ? { width: "min(40rem, calc(100vw - 2rem))" } : undefined}
+      style={wide ? { width: "min(40rem, calc(100vw - 1.5rem))" } : undefined}
       aria-labelledby={titleId}
       aria-describedby={description ? descId : undefined}
       onClose={onClose}
@@ -57,14 +57,14 @@ export function Dialog({
       }}
     >
       {open && (
-        <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
-          <header className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
+        <div className="flex max-h-[calc(100dvh-3rem)] flex-col">
+          <header className="flex items-start justify-between gap-4 px-6 pt-5 pb-4">
             <div className="min-w-0">
-              <h2 id={titleId} className="text-sm font-semibold text-fg">
+              <h2 id={titleId} className="font-display text-xl font-bold tracking-tight text-text">
                 {title}
               </h2>
               {description && (
-                <p id={descId} className="mt-0.5 text-ui text-muted">
+                <p id={descId} className="mt-1 text-ui text-subtext0">
                   {description}
                 </p>
               )}
@@ -73,12 +73,12 @@ export function Dialog({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-1.5 rounded-md p-1 text-subtle hover:bg-hover hover:text-fg"
+              className="-mr-2 rounded-full p-1.5 text-overlay1 hover:bg-surface0 hover:text-text"
             >
               <X className="size-4" />
             </button>
           </header>
-          <div className="overflow-y-auto px-5 pb-5">{children}</div>
+          <div className="overflow-y-auto px-6 pb-6">{children}</div>
         </div>
       )}
     </dialog>

@@ -1,37 +1,33 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { Suspense } from "react";
-import { Sidebar, SidebarFallback } from "@/components/sidebar";
+import { TopBar, TopBarFallback } from "@/components/top-bar";
 import { KeyboardShortcuts, RefreshOnFocus } from "@/components/shell-client";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const display = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  weight: ["500", "700", "800"],
+});
+const sans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
+const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], weight: ["500"] });
 
 export const metadata: Metadata = {
-  title: { default: "Todo", template: "%s · Todo" },
+  title: { default: "todo", template: "%s · todo" },
   description: "Your Tasks, written and worked on by your agents.",
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c0c0d" },
-  ],
-};
+export const viewport: Viewport = { themeColor: "#181825", colorScheme: "dark" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <body>
-        <div className="flex min-h-dvh flex-col md:flex-row">
-          <Suspense fallback={<SidebarFallback />}>
-            <Sidebar />
-          </Suspense>
-          <main className="min-w-0 flex-1">
-            <div className="mx-auto w-full max-w-4xl px-4 pt-6 pb-16 sm:px-8 md:pt-10">{children}</div>
-          </main>
-        </div>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}>
+      <body className="min-h-dvh">
+        <Suspense fallback={<TopBarFallback />}>
+          <TopBar />
+        </Suspense>
+        <main className="mx-auto w-full max-w-[1400px] px-4 pt-6 pb-16 sm:px-8 sm:pt-8">{children}</main>
         <KeyboardShortcuts />
         <RefreshOnFocus />
       </body>

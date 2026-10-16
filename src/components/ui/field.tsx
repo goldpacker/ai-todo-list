@@ -3,15 +3,15 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTML
 import { ChevronDown } from "lucide-react";
 
 const control =
-  "w-full rounded-md border bg-bg px-2.5 text-ui text-fg placeholder:text-subtle transition-colors hover:border-line-strong focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-60";
+  "w-full rounded-xl border bg-mantle px-3 text-sm text-text placeholder:text-overlay1 transition-colors hover:border-surface2 focus-visible:border-mauve focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-mauve/25 disabled:opacity-60";
 
-const tone = (invalid?: boolean) => (invalid ? "border-danger" : "border-line");
+const tone = (invalid?: boolean) => (invalid ? "border-red" : "border-surface1");
 
 type Invalid = { invalid?: boolean };
 
 export function Input({ className, invalid, ...props }: InputHTMLAttributes<HTMLInputElement> & Invalid) {
   return (
-    <input aria-invalid={invalid || undefined} className={clsx(control, tone(invalid), "h-8", className)} {...props} />
+    <input aria-invalid={invalid || undefined} className={clsx(control, tone(invalid), "h-10", className)} {...props} />
   );
 }
 
@@ -19,7 +19,7 @@ export function Textarea({ className, invalid, ...props }: TextareaHTMLAttribute
   return (
     <textarea
       aria-invalid={invalid || undefined}
-      className={clsx(control, tone(invalid), "min-h-20 resize-y py-1.5 leading-relaxed", className)}
+      className={clsx(control, tone(invalid), "min-h-20 resize-y py-2 leading-relaxed", className)}
       {...props}
     />
   );
@@ -30,14 +30,14 @@ export function Select({ className, invalid, children, ...props }: SelectHTMLAtt
     <div className={clsx("relative", className)}>
       <select
         aria-invalid={invalid || undefined}
-        className={clsx(control, tone(invalid), "h-8 appearance-none pr-7")}
+        className={clsx(control, tone(invalid), "h-10 appearance-none pr-8")}
         {...props}
       >
         {children}
       </select>
       <ChevronDown
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-subtle"
+        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-overlay1"
       />
     </div>
   );
@@ -62,18 +62,18 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className={clsx("flex min-w-0 flex-col gap-1", className)}>
-      <label htmlFor={id} className="text-xs font-medium text-muted">
+    <div className={clsx("flex min-w-0 flex-col gap-1.5", className)}>
+      <label htmlFor={id} className="text-ui font-semibold text-subtext1">
         {label}
-        {optional && <span className="font-normal text-subtle"> · optional</span>}
+        {optional && <span className="font-normal text-overlay1"> · optional</span>}
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-xs text-danger">
+        <p id={`${id}-error`} className="text-xs font-medium text-red">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-xs text-subtle">
+        <p id={`${id}-hint`} className="text-xs text-subtext0">
           {hint}
         </p>
       ) : null}

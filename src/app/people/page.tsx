@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { readCore } from "@/lib/core";
-import { plural } from "@/lib/format";
 import { PageHeader } from "@/components/section";
 import { Avatar } from "@/components/task-bits";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -15,41 +14,42 @@ export default async function PeoplePage() {
   const rest = people.filter((p) => p.activeTaskCount === 0);
 
   return (
-    <>
-      <PageHeader title="People" meta={people.length || undefined}>
-        Everyone linked to your Tasks. Open someone before a 1:1 to see what to discuss.
+    <div className="max-w-5xl">
+      <PageHeader title="People" meta={people.length}>
+        Everyone your Tasks mention. Peek before a 1:1 to see what to bring up.
       </PageHeader>
       {people.length === 0 ? (
         <EmptyState icon={<Users />} title="No People yet">
-          People are added automatically when a Task links them by name or @handle.
+          People appear automatically when a Task links them by name or @handle.
         </EmptyState>
       ) : (
-        <ul className="-mx-2 flex flex-col">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[...withWork, ...rest].map((p) => (
             <li key={p.id}>
               <Link
                 href={`/people/${p.id}`}
-                className="flex min-h-11 items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-hover"
+                className="flex items-center gap-3 rounded-2xl bg-surface0 p-3.5 transition-[background-color,transform] hover:-translate-y-px hover:bg-surface1/70"
               >
-                <Avatar name={p.name} className="size-6 text-[10px]" />
-                <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                  <span className={p.activeTaskCount ? "truncate text-sm text-fg" : "truncate text-sm text-muted"}>
-                    {p.name}
+                <Avatar name={p.name} colorKey={p.id} className="size-10 text-sm" />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[15px] font-semibold">{p.name}</span>
+                  <span className="truncate font-mono text-xs text-overlay1">
+                    {p.handles.length ? p.handles.join(" ") : "no handle"}
                   </span>
-                  {p.handles.length > 0 && (
-                    <span className="hidden truncate font-mono text-xs text-subtle sm:inline">
-                      {p.handles.join(" ")}
-                    </span>
-                  )}
                 </span>
-                <span className="shrink-0 text-xs text-subtle tabular-nums">
-                  {p.activeTaskCount ? plural(p.activeTaskCount, "active Task") : "No active Tasks"}
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${
+                    p.activeTaskCount ? "bg-mauve text-on" : "bg-surface1 text-subtext0"
+                  }`}
+                  aria-label={`${p.activeTaskCount} active Tasks`}
+                >
+                  {p.activeTaskCount}
                 </span>
               </Link>
             </li>
           ))}
         </ul>
       )}
-    </>
+    </div>
   );
 }

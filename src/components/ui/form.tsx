@@ -43,7 +43,7 @@ export function useServerForm(action: ServerAction, options: { onSuccess?: (stat
 export function FormError({ state }: { state: ActionState }) {
   if (state.ok || !state.message || state.duplicates) return null;
   return (
-    <p role="alert" className="flex items-start gap-1.5 rounded-md bg-danger-soft px-2.5 py-2 text-ui text-danger">
+    <p role="alert" className="flex items-start gap-2 rounded-xl bg-red/12 px-3 py-2.5 text-ui font-medium text-red">
       <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
       <span>{state.message}</span>
     </p>

@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import clsx from "clsx";
-import { Inbox } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { LANES, LANE_INFO, type Lane, type Status } from "@/core/domain";
 import { readCore } from "@/lib/core";
 import { toDateString } from "@/lib/format";
-import { ACTIVE_STATUS_ORDER, STATUS_LABEL } from "@/lib/ui-meta";
-import { PageHeader, Section } from "@/components/section";
-import { LaneDot, StatusIcon } from "@/components/task-bits";
-import { TaskList, TaskRow } from "@/components/task-row";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ACTIVE_STATUS_ORDER, LANE_COLOR, STATUS_LABEL } from "@/lib/ui-meta";
+import { ColumnEmpty, PageHeader, Section } from "@/components/section";
+import { StatusIcon } from "@/components/task-bits";
+import { TaskCard, defaultContext } from "@/components/task-card";
 import { NewTaskButton } from "@/components/shell-client";
 
 const FILTERS: (Status | "all")[] = ["all", ...ACTIVE_STATUS_ORDER, "done"];
@@ -21,6 +20,10 @@ function isLane(value: string): value is Lane {
 export async function generateMetadata({ params }: PageProps<"/lanes/[lane]">) {
   const { lane } = await params;
   return { title: isLane(lane) ? LANE_INFO[lane].name : "Lane" };
+}
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</ul>;
 }
 
 export default async function LanePage({ params, searchParams }: PageProps<"/lanes/[lane]">) {
@@ -37,23 +40,35 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
   const done = filter === "done" ? core.list({ lane, status: "done" }) : [];
   const count = (f: Status | "all") =>
     f === "all" ? active.length : f === "done" ? null : active.filter((t) => t.status === f).length;
+  const card = (t: (typeof active)[number]) => (
+    <TaskCard key={t.id} task={t} today={today} hideLane context={defaultContext(t)} dashed={t.status === "claimed"} />
+  );
 
   return (
-    <>
+    <div className="max-w-6xl">
+      <Link href="/lanes" className="mb-3 inline-flex items-center gap-1 text-ui text-subtext0 hover:text-text">
+        <ChevronLeft aria-hidden className="size-4" /> All Lanes
+      </Link>
       <PageHeader
-        title={info.name}
-        icon={<LaneDot lane={lane} className="size-2.5" />}
-        meta={active.length || undefined}
+        title={
+          <span
+            className="inline-flex items-center rounded-full px-4 py-0.5 text-on"
+            style={{ backgroundColor: LANE_COLOR[lane] }}
+          >
+            {info.name}
+          </span>
+        }
+        meta={active.length}
         actions={<NewTaskButton request={{ lane }} />}
       >
         <p>{info.description}</p>
-        <p className="mt-1.5 text-xs text-subtle">
-          <span className="text-muted">Who acts:</span> {info.whoActs}. <span className="text-muted">Worker:</span>{" "}
-          {info.workerAction}
+        <p className="mt-1.5 text-xs text-overlay1">
+          <span className="font-semibold text-subtext0">Who acts:</span> {info.whoActs}.{" "}
+          <span className="font-semibold text-subtext0">Worker:</span> {info.workerAction}
         </p>
       </PageHeader>
 
-      <nav aria-label="Filter by status" className="-mx-1 mb-6 flex flex-wrap gap-1">
+      <nav aria-label="Filter by status" className="mb-6 flex flex-wrap gap-1.5">
         {FILTERS.map((f) => {
           const n = count(f);
           const selected = f === filter;
@@ -64,13 +79,13 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
               aria-current={selected ? "page" : undefined}
               scroll={false}
               className={clsx(
-                "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-ui transition-colors",
-                selected ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
+                "inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-ui transition-colors",
+                selected ? "bg-surface0 font-semibold text-text" : "text-subtext0 hover:bg-surface0/60 hover:text-text",
               )}
             >
-              {f !== "all" && <StatusIcon status={f} className="size-3" />}
+              {f !== "all" && <StatusIcon status={f} className="size-3.5" />}
               {f === "all" ? "All active" : STATUS_LABEL[f]}
-              {n ? <span className="text-xs text-subtle tabular-nums">{n}</span> : null}
+              {n ? <span className="text-xs text-overlay1 tabular-nums">{n}</span> : null}
             </Link>
           );
         })}
@@ -78,9 +93,7 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
 
       {filter === "all" ? (
         active.length === 0 ? (
-          <EmptyState icon={<Inbox />} title={`No active ${info.name} Tasks`}>
-            Batch similar work here once Tasks are captured into this Lane.
-          </EmptyState>
+          <ColumnEmpty emoji="✨">No active {info.name} Tasks. Batch work lands here once it’s captured.</ColumnEmpty>
         ) : (
           ACTIVE_STATUS_ORDER.map((status) => {
             const tasks = active.filter((t) => t.status === status);
@@ -89,14 +102,10 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
               <Section
                 key={status}
                 title={STATUS_LABEL[status]}
-                icon={<StatusIcon status={status} className="size-3" />}
+                icon={<StatusIcon status={status} />}
                 count={tasks.length}
               >
-                <TaskList>
-                  {tasks.map((t) => (
-                    <TaskRow key={t.id} task={t} today={today} />
-                  ))}
-                </TaskList>
+                <Grid>{tasks.map(card)}</Grid>
               </Section>
             );
           })
@@ -105,16 +114,14 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
         (() => {
           const tasks = filter === "done" ? done : active.filter((t) => t.status === filter);
           return tasks.length === 0 ? (
-            <EmptyState icon={<Inbox />} title={`No ${STATUS_LABEL[filter].toLowerCase()} ${info.name} Tasks`} />
+            <ColumnEmpty emoji="🫥">
+              No {STATUS_LABEL[filter].toLowerCase()} {info.name} Tasks.
+            </ColumnEmpty>
           ) : (
-            <TaskList>
-              {tasks.map((t) => (
-                <TaskRow key={t.id} task={t} today={today} />
-              ))}
-            </TaskList>
+            <Grid>{tasks.map(card)}</Grid>
           );
         })()
       )}
-    </>
+    </div>
   );
 }
