@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/*
+  Design tokens. Neutral grayscale with one accent (indigo). Lane hues are deliberately muted and
+  only ever appear as small dots. Light by default; dark via prefers-color-scheme.
+*/
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-hover: rgb(0 0 0 / 0.035);
+  --bg-active: rgb(0 0 0 / 0.06);
+  --bg-avatar: #ededee;
+  --fg: #171717;
+  --fg-muted: #5c5c5c;
+  --fg-subtle: #737373;
+  --border: #ececec;
+  --border-strong: #dedede;
+  --accent: oklch(0.52 0.18 268);
+  --accent-hover: oklch(0.47 0.18 268);
+  --accent-fg: #ffffff;
+  --accent-soft: oklch(0.52 0.18 268 / 0.09);
+  --danger: oklch(0.53 0.19 27);
+  --danger-soft: oklch(0.53 0.19 27 / 0.08);
+  --warn: oklch(0.56 0.13 65);
+  --success: oklch(0.55 0.12 155);
+  --backdrop: rgb(0 0 0 / 0.25);
+  --shadow-dialog: 0 16px 48px -12px rgb(0 0 0 / 0.18), 0 0 0 1px rgb(0 0 0 / 0.06);
+
+  --lane-delegate: oklch(0.58 0.12 300);
+  --lane-deep-work: oklch(0.58 0.11 240);
+  --lane-write: oklch(0.6 0.09 180);
+  --lane-review: oklch(0.68 0.11 80);
+  --lane-align: oklch(0.62 0.12 15);
+  --lane-quick: oklch(0.63 0.09 135);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0c0c0d;
+    --bg-subtle: #111113;
+    --bg-hover: rgb(255 255 255 / 0.045);
+    --bg-active: rgb(255 255 255 / 0.075);
+    --bg-avatar: #232326;
+    --fg: #ededed;
+    --fg-muted: #a3a3a3;
+    --fg-subtle: #8c8c8c;
+    --border: #1f1f22;
+    --border-strong: #2c2c30;
+    --accent: oklch(0.7 0.14 268);
+    --accent-hover: oklch(0.76 0.12 268);
+    --accent-fg: #0c0c0d;
+    --accent-soft: oklch(0.7 0.14 268 / 0.13);
+    --danger: oklch(0.7 0.16 25);
+    --danger-soft: oklch(0.7 0.16 25 / 0.12);
+    --warn: oklch(0.77 0.12 75);
+    --success: oklch(0.72 0.12 155);
+    --backdrop: rgb(0 0 0 / 0.55);
+    --shadow-dialog: 0 16px 48px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+
+    --lane-delegate: oklch(0.7 0.11 300);
+    --lane-deep-work: oklch(0.7 0.1 240);
+    --lane-write: oklch(0.72 0.08 180);
+    --lane-review: oklch(0.78 0.1 80);
+    --lane-align: oklch(0.72 0.11 15);
+    --lane-quick: oklch(0.74 0.09 135);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-hover: var(--bg-hover);
+  --color-active: var(--bg-active);
+  --color-avatar: var(--bg-avatar);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-success: var(--success);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Native dialog: centered sheet, subtle backdrop, gentle entrance. */
+dialog.ui-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-dialog);
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 4rem);
+}
+dialog.ui-dialog::backdrop {
+  background: var(--backdrop);
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog.ui-dialog[open] {
+    animation: dialog-in 140ms ease-out;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+}
+
+/* Markdown (Preps, descriptions): compact, readable typography. */
+.md {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+.md > * + * {
+  margin-top: 0.75em;
+}
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin-top: 1.4em;
+}
+.md > :first-child {
+  margin-top: 0;
+}
+.md h1 {
+  font-size: 1.125rem;
+}
+.md h2 {
+  font-size: 1rem;
+}
+.md h3,
+.md h4 {
+  font-size: 0.875rem;
+}
+.md a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--accent) 35%, transparent);
+  text-underline-offset: 2px;
+}
+.md a:hover {
+  text-decoration-color: var(--accent);
+}
+.md strong {
+  font-weight: 600;
+}
+.md ul,
+.md ol {
+  padding-left: 1.25rem;
+}
+.md ul {
+  list-style: disc;
+}
+.md ol {
+  list-style: decimal;
+}
+.md li + li {
+  margin-top: 0.25em;
+}
+.md li::marker {
+  color: var(--fg-subtle);
+}
+.md ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+.md input[type="checkbox"] {
+  margin-right: 0.4em;
+  accent-color: var(--accent);
+  vertical-align: -1px;
+}
+.md code {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  background: var(--bg-active);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.md pre {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  overflow-x: auto;
+}
+.md pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+.md blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 0.85rem;
+  color: var(--fg-muted);
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.25em 0;
+}
+.md table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.md th,
+.md td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+.md th {
+  font-weight: 600;
+  background: var(--bg-subtle);
+}
