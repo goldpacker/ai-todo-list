@@ -18,7 +18,14 @@ const execFileAsync = promisify(execFile);
 
 export const ghPrStatus: PrStatusAdapter = {
   async getState(url) {
-    const { stdout } = await execFileAsync("gh", ["pr", "view", url, "--json", "state"]);
+    let stdout: string;
+    try {
+      ({ stdout } = await execFileAsync("gh", ["pr", "view", url, "--json", "state"]));
+    } catch (e) {
+      // Surface gh's own explanation ("not logged in", "Could not resolve…") rather than the exec wrapper.
+      const stderr = (e as { stderr?: string }).stderr?.trim();
+      throw new Error(stderr || (e instanceof Error ? e.message : String(e)));
+    }
     const state = String(JSON.parse(stdout).state).toUpperCase();
     if (state === "MERGED") return "merged";
     if (state === "CLOSED") return "closed";

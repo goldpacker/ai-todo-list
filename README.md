@@ -75,4 +75,11 @@ pnpm typecheck
 pnpm lint
 ```
 
+To try the app with realistic data, seed a scratch database and point the app at it:
+
+```sh
+pnpm tsx scripts/seed-demo.ts /tmp/todo-demo.db --reset
+AI_TODO_DB=/tmp/todo-demo.db pnpm dev
+```
+
 Layout: `src/core` holds the domain module (all rules, over SQLite via Drizzle), `src/cli` the `todo` CLI, `src/app` the Next.js web app, and `skills/` the agent skills. The CLI and the web app are thin adapters over the core. Tests go through the core's interface against a real SQLite file with a fake clock and a fake PR-status adapter.
