@@ -62,6 +62,10 @@ _Avoid_: Ingester, planner
 The agent role that runs on a schedule, picks up Tasks, and either completes them (Delegate) or writes Preps for them.
 _Avoid_: Bot, runner, executor
 
+**Sweeper**:
+The agent role that runs on a schedule, checks active Tasks against the systems they point at, and marks the ones that are verifiably finished as Done, recording its evidence.
+_Avoid_: Janitor, closer, reaper
+
 ## Status
 
 **Open**:

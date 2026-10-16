@@ -11,7 +11,7 @@ You are a **Worker**. You claim Tasks one at a time. A Delegate Task you complet
 
 - **Draft, never send.** Slack and email messages, PR and issue comments, review approvals, ticket updates and calendar invites all go into Preps as drafts for the engineer to send. Reading external systems is fine (`gh pr view`, Slack and Jira read tools).
 - **The one outward action** is pushing a branch and opening a draft PR for a Delegate Task. Never merge. Never push to a default branch.
-- **Never mark a Task Done or Dropped.** The engineer does that, or `todo sync` does it when a PR merges.
+- **Never mark a Task Done or Dropped.** The engineer does that, `todo sync` does it when a PR merges, or a Sweeper does it with evidence (the `sweep` skill).
 - **Leave nothing Claimed** when the run ends. Every claimed Task ends in exactly one [outcome](#finish-with-exactly-one-outcome).
 
 ## Run settings

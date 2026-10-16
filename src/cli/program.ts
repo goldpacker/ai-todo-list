@@ -562,9 +562,14 @@ export function buildProgram(deps: CliDeps, state: { exitCode: number } = { exit
   cmd(program, "ready <id>", "mark a Task ready for the engineer").action(
     act((ctx, _o, id: number) => brief(ctx, ctx.core.markReady(id), "Ready:")),
   );
-  cmd(program, "done <id>", "mark a Task done").action(
-    act((ctx, _o, id: number) => brief(ctx, ctx.core.markDone(id), "Done:")),
-  );
+  cmd(program, "done <id>", "mark a Task done")
+    .option("--note <text>", "why it is done (evidence)")
+    .option("--author <name>", "who wrote the note (default engineer)")
+    .action(
+      act((ctx, o, id: number) =>
+        brief(ctx, ctx.core.markDone(id, o.note as string | undefined, o.author as string | undefined), "Done:"),
+      ),
+    );
   cmd(program, "drop <id>", "drop a Task (or an Initiative and its unresolved children)")
     .option("--note <text>", "why")
     .action(act((ctx, o, id: number) => brief(ctx, ctx.core.drop(id, o.note as string | undefined), "Dropped")));

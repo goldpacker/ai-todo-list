@@ -987,14 +987,18 @@ export function createCore(options: CoreOptions = {}) {
       return detail(id);
     },
 
-    markDone(id: number): TaskDetail {
+    /** Marks a Task done, optionally recording why (e.g. a Sweeper's evidence) in the same transaction. */
+    markDone(id: number, note?: string, author = "engineer"): TaskDetail {
       const row = getRow(id);
       if (row.kind === "initiative") {
         throw new TodoError("VALIDATION", `Initiative ${id} is done automatically when all its children are resolved`, {
           id,
         });
       }
-      setStatus(row, "done");
+      transaction(() => {
+        setStatus(row, "done");
+        if (note?.trim()) addNote(id, note.trim(), author);
+      });
       return detail(id);
     },
 
@@ -1227,6 +1231,7 @@ export function describeSchema() {
       "Claims expire after two hours unless renewed; expired claims count as open.",
       "Claim order: priority (high first), then due date (earliest first), then oldest.",
       "Workers draft; they never send messages to people on the engineer's behalf. Opening a PR for a Delegate Task is the only outward action.",
+      "A Task is marked done by the engineer, by PR sync when its PR merges, or by a Sweeper that records its evidence as a note (`done --note`). Agents never drop Tasks.",
     ],
     captureInput: z.toJSONSchema(captureInput),
   };

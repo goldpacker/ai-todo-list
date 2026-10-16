@@ -10,6 +10,14 @@ describe("status transitions", () => {
     expect(done.resolvedAt).not.toBeNull();
   });
 
+  it("records why a Task is done, with its author, when marking it done", () => {
+    const { core } = setup();
+    const task = core.addTask({ title: "Review Priya's PR", lane: "review" });
+    const done = core.markDone(task.id, "PR #4821 merged on 2026-10-14", "sweeper-mbp");
+    expect(done.status).toBe("done");
+    expect(done.notes).toMatchObject([{ body: "PR #4821 merged on 2026-10-14", author: "sweeper-mbp" }]);
+  });
+
   it("lets the engineer finish or drop a Task from any active status", () => {
     const { core } = setup();
     for (const lane of ["deep-work", "write", "review", "align"] as const) {
