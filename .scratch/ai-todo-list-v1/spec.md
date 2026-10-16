@@ -126,7 +126,7 @@ The core takes two injected dependencies:
 ### Domain rules
 
 - **Lanes**: Delegate, Deep Work, Write, Review, Align, Quick. Every Task except an Initiative has exactly one. Every Lane change records the old Lane, new Lane, reason, who made the change (engineer or agent) and when.
-- **Statuses**: Open → Claimed → Ready → Done; Waiting and Dropped can be reached from any active status. Quick Tasks may go straight from Open to Done. A failed Worker releases its claim back to Open with a note. Transitions outside these are rejected.
+- **Statuses**: Open → Claimed → Ready → Done; Waiting, Done and Dropped can be reached from any active status (so a Quick Task, or one the engineer simply did, can go straight from Open to Done). Done and Dropped can only be reopened. A failed Worker releases its claim back to Open with a note. Transitions outside these are rejected.
 - **Claiming** is one atomic transaction: pick the best eligible Open Task in the requested Lane (priority, then due date, then creation time), mark it Claimed with an expiry two hours ahead, and return it with its full context. Claims past their expiry count as Open for eligibility. Renewing pushes the expiry forward.
 - **Delegate Tasks** require a registered Repo. A Worker may claim them as soon as they're captured, with no approval step.
 - **Initiatives** are Tasks with no Lane, holding child Tasks one level deep (no nested Initiatives). An Initiative's status is derived: done once every child is Done or Dropped. The Capturer's guidance is to create one when a capture produces three or more related Tasks, or on request.
