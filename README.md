@@ -5,7 +5,7 @@ A personal task list for a staff engineer that lives on your own machine. Coding
 - **Capture**: hand your agent a Slack thread, a ticket or just a conversation. Acting as the **Capturer**, it breaks the work into **Tasks**, gives each one a **Lane**, and records its **Sources** and **People** through the `todo` CLI.
 - **Work**: scheduled agents acting as **Workers** claim Tasks one at a time. **Delegate** Tasks become PRs for you to review. Every other Lane gets a **Prep** (a research brief, an outline, a review summary, alignment notes or a drafted reply), so the groundwork is done when you sit down to it.
 - **Sweep**: a scheduled agent acting as the **Sweeper** checks your active Tasks against their PRs, tickets and threads, and marks the ones you've actually finished as Done, with the evidence recorded. Anything it isn't sure about gets a note instead.
-- **Review**: the web app's **Today** view shows what's ready for you, what's urgent and what's overdue, grouped by Lane.
+- **Review**: the web app opens on the **Lanes** board, every active Task by the kind of work it is. A **Heating up** strip on top and red or peach card edges show what's pressing: overdue, due this week, high priority, or a follow-up due. The **Today** tab still groups things by your move, the agents' and other people's.
 
 The app itself never calls an LLM ([ADR 0001](docs/adr/0001-no-llm-inside-the-app.md)). All the judgment lives in your agents, guided by the three skills in [`skills/`](skills/).
 

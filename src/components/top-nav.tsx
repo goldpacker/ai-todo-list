@@ -7,14 +7,15 @@ import { Plus } from "lucide-react";
 import { openNewTask } from "./events";
 
 const ITEMS = [
-  { href: "/", label: "Today" },
-  { href: "/lanes", label: "Lanes" },
+  { href: "/", label: "Lanes" },
+  { href: "/today", label: "Today" },
   { href: "/initiatives", label: "Initiatives" },
   { href: "/people", label: "People" },
 ];
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  // Lane pages (/lanes/review) sit under the Lanes board, which is the home page.
+  if (href === "/") return pathname === "/" || pathname.startsWith("/lanes/");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

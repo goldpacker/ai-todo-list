@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // better-sqlite3 is a native addon; load it with Node's require instead of bundling it.
   serverExternalPackages: ["better-sqlite3"],
+  // The Lanes board became the home page; keep old /lanes links working.
+  redirects: async () => [{ source: "/lanes", destination: "/", permanent: false }],
   turbopack: {
     rules: {
       "*.css": {

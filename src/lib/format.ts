@@ -3,7 +3,6 @@
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -30,13 +29,14 @@ export function shortDate(date: string, today?: string): string {
 
 export type DueTone = "overdue" | "today" | "soon" | "later";
 
-/** "Overdue 2d", "Due today", "Due tomorrow", "Due Fri", "Due Oct 24". */
+/** "2d late", "Due today", "Due tomorrow", "Due in 5d", "Due Oct 24". */
 export function dueLabel(dueDate: string, today: string): { text: string; tone: DueTone } {
   const diff = daysBetween(today, dueDate);
-  if (diff < 0) return { text: `Overdue ${-diff}d`, tone: "overdue" };
+  if (diff < 0) return { text: `${-diff}d late`, tone: "overdue" };
   if (diff === 0) return { text: "Due today", tone: "today" };
   if (diff === 1) return { text: "Due tomorrow", tone: "soon" };
-  if (diff < 7) return { text: `Due ${WEEKDAYS[dateParts(dueDate).getUTCDay()]}`, tone: "soon" };
+  if (diff < 7) return { text: `Due in ${diff}d`, tone: "soon" };
+  if (diff < 14) return { text: `Due in ${diff}d`, tone: "later" };
   return { text: `Due ${shortDate(dueDate, today)}`, tone: "later" };
 }
 

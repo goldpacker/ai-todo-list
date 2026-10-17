@@ -45,7 +45,7 @@ describe("Today view", () => {
     expect(html).toContain("the agents prepped 1 thing");
     for (const column of ["Your move", "Agents on it", "Waiting on people"]) expect(html).toContain(column);
     expect(html).toContain("Review Priya&#x27;s failover PR");
-    expect(html).toContain("overdue 2d");
+    expect(html).toContain("2d late");
     expect(html).toContain(">high<");
     expect(html).toContain("Bump zod");
     expect(html).toContain("queued for the next run");

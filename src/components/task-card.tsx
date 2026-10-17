@@ -3,11 +3,17 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import { Layers } from "lucide-react";
 import type { TaskSummary, TodayReason } from "@/core/core";
+import type { Heat } from "@/lib/heat";
 import { ACTIVE_STATUSES } from "@/core/domain";
 import { Pill } from "./ui/badge";
 import { DuePill, LanePill, PeopleStack, PriorityPill, StatusIcon } from "./task-bits";
 
-/** A Task as a rounded surface0 card: pills, title, one context line, people. */
+export const HEAT_EDGE: Record<Heat, string> = {
+  hot: "shadow-[inset_4px_0_0_var(--color-red)]",
+  warm: "shadow-[inset_4px_0_0_var(--color-peach)]",
+};
+
+/** A Task as a rounded surface0 card: pills, title, one context line, people. A heat edge marks pressing ones. */
 export function TaskCard({
   task,
   today,
@@ -17,6 +23,7 @@ export function TaskCard({
   showStatus = false,
   dashed = false,
   hideLane = false,
+  heat = null,
 }: {
   task: TaskSummary;
   today: string;
@@ -26,6 +33,7 @@ export function TaskCard({
   showStatus?: boolean;
   dashed?: boolean;
   hideLane?: boolean;
+  heat?: Heat | null;
 }) {
   const active = ACTIVE_STATUSES.includes(task.status);
   const isReady = reasons ? reasons.includes("ready") : false;
@@ -34,10 +42,12 @@ export function TaskCard({
       <Link
         href={task.kind === "initiative" ? `/initiatives/${task.id}` : `/tasks/${task.id}`}
         className={clsx(
-          "group flex flex-col gap-2.5 rounded-2xl bg-surface0 p-3.5 transition-[background-color,transform] hover:-translate-y-px hover:bg-surface1/70",
+          "group relative flex flex-col gap-2.5 rounded-2xl bg-surface0 p-3.5 transition-[background-color,transform] hover:-translate-y-px hover:bg-surface1/70",
           dashed && "border-2 border-dashed border-green",
+          heat && [HEAT_EDGE[heat], "pl-[18px]"],
         )}
       >
+        {heat && <span className="sr-only">{heat === "hot" ? "Hot: " : "Warming up: "}</span>}
         <span className="flex flex-wrap items-center gap-1.5">
           {showStatus && <StatusIcon status={task.status} className="mr-0.5" />}
           {task.kind === "initiative" ? (

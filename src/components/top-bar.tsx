@@ -6,7 +6,7 @@ import { AddTaskButton, TopNav } from "./top-nav";
 
 function Brand() {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="todo — Today">
+    <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="todo — Lanes">
       <span className="flex size-[34px] items-center justify-center rounded-xl bg-mauve" aria-hidden>
         <svg
           viewBox="0 0 24 24"

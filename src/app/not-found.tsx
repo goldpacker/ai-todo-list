@@ -10,7 +10,7 @@ export default function NotFound() {
         No Task, Lane, Person or Initiative lives here. Maybe it was dropped, or an agent tidied it away.
       </p>
       <Link href="/" className={buttonClass("primary", "md", "mt-2")}>
-        Back to Today
+        Back to Lanes
       </Link>
     </div>
   );

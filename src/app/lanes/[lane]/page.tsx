@@ -46,7 +46,7 @@ export default async function LanePage({ params, searchParams }: PageProps<"/lan
 
   return (
     <div className="max-w-6xl">
-      <Link href="/lanes" className="mb-3 inline-flex items-center gap-1 text-ui text-subtext0 hover:text-text">
+      <Link href="/" className="mb-3 inline-flex items-center gap-1 text-ui text-subtext0 hover:text-text">
         <ChevronLeft aria-hidden className="size-4" /> All Lanes
       </Link>
       <PageHeader

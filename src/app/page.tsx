@@ -1,33 +1,30 @@
-import type { PrepKind } from "@/core/domain";
-import { TodayContent } from "@/components/today-view";
+import { HomeContent } from "@/components/home-view";
 import { readCore } from "@/lib/core";
 import { toDateString } from "@/lib/format";
-import { buildTodayBoard, greeting, preppedCount } from "@/lib/today-board";
+import { heatOf, heatingUp, type Heat } from "@/lib/heat";
+import { greeting, preppedCount } from "@/lib/today-board";
 
-export const metadata = { title: "Today" };
+export const metadata = { title: { absolute: "Lanes · todo" } };
 
-export default async function TodayPage() {
+export default async function HomePage() {
   const core = await readCore();
   const now = new Date();
+  const today = toDateString(now);
   const active = core.list({ kind: "task" });
-  const board = buildTodayBoard({
-    today: core.today(),
-    active,
-    followUpDueIds: new Set(core.followUpsDue().map((t) => t.id)),
-  });
+  const followUpDueIds = new Set(core.followUpsDue().map((t) => t.id));
 
-  // The latest Prep's kind gives "your move" cards their context line ("Brief's ready").
-  const prepKinds: Partial<Record<number, PrepKind>> = {};
-  for (const t of board.yourMove) {
-    if (t.prepCount > 0) prepKinds[t.id] = core.task(t.id).preps.at(-1)?.kind;
+  const heat = new Map<number, Heat>();
+  for (const t of active) {
+    const h = heatOf(t, today, followUpDueIds.has(t.id)).heat;
+    if (h) heat.set(t.id, h);
   }
 
   return (
-    <TodayContent
-      board={board}
-      now={now}
-      prepKinds={prepKinds}
-      header={{ greeting: greeting(now.getHours()), date: toDateString(now), prepped: preppedCount(active) }}
+    <HomeContent
+      header={{ greeting: greeting(now.getHours()), date: today, prepped: preppedCount(active) }}
+      rail={heatingUp(active, today, followUpDueIds)}
+      active={active}
+      heat={heat}
     />
   );
 }
